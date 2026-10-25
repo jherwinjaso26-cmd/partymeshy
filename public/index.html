@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+    <title>PartyMesh - Pass The Bomb Arena</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Real-time Status Glow Overlay Layer -->
+    <div id="glow-indicator"></div>
+
+    <!-- 0. DEVICE SELECTION GATEWAY OVERLAY -->
+    <div id="device-select-screen" class="device-modal-overlay">
+        <div class="device-modal-card">
+            <h1>Pass The Bomb</h1>
+            <h2>Select Your Configuration</h2>
+            <p>We will optimize the performance layout and hardware input mappings for your screen.</p>
+            <div class="device-options-grid">
+                <button class="device-option-btn" data-layout="mobile">
+                    <span class="device-icon">📱</span>
+                    <div class="device-btn-text">
+                        <strong>Mobile Phone</strong>
+                        <small>Enables compact canvas + joystick touchscreen layout</small>
+                    </div>
+                </button>
+                <button class="device-option-btn" data-layout="tablet">
+                    <span class="device-icon">📟</span>
+                    <div class="device-btn-text">
+                        <strong>Tablet Device</strong>
+                        <small>Enables mid-scale responsive frame + touch controls</small>
+                    </div>
+                </button>
+                <button class="device-option-btn" data-layout="laptop">
+                    <span class="device-icon">💻</span>
+                    <div class="device-btn-text">
+                        <strong>Laptop / PC</strong>
+                        <small>Keyboard controls (WASD/Arrows) + touchless arena framework</small>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. MAIN ENTRY MATCHMAKING SCREEN -->
+    <div id="menu-screen" class="screen hidden">
+        <h1>Pass The Bomb</h1>
+        <div class="settings-group">
+            <h3>Player Profile</h3>
+            <label>
+                Username:
+                <input type="text" id="input-username" placeholder="Enter username..." maxlength="14">
+            </label>
+        </div>
+        
+        <div class="settings-group">
+            <h3>Arena Matchmaking</h3>
+            <button id="btn-host" class="primary-btn">Host Room</button>
+            <div style="display: flex; gap: 8px; width: 100%; align-items: center; margin-top: 4px;">
+                <input type="text" id="input-room" placeholder="4-Digit Code" maxlength="4">
+                <button id="btn-join" class="secondary-btn">Join Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MULTIPLAYER LOBBY SCREEN -->
+    <div id="lobby-screen" class="screen hidden">
+        <h1 id="display-room-id">Arena Room Code: ----</h1>
+        
+        <!-- Host Game Rules Panel (Only visible to the room leader) -->
+        <div id="host-settings-panel" class="settings-group hidden">
+            <h3>Match Configuration</h3>
+            <label>
+                Map Terrain:
+                <select id="select-terrain">
+                    <option value="cyber">Cyber Grid</option>
+                    <option value="volcano">Volcano Core</option>
+                    <option value="jungle">Jungle Ruins</option>
+                </select>
+            </label>
+            <label>
+                Obstacle Rules:
+                <select id="select-difficulty">
+                    <option value="none">No Obstacles</option>
+                    <option value="medium">Standard Setup</option>
+                    <option value="hard">Traps & Shifting Shards</option>
+                </select>
+            </label>
+        </div>
+
+        <!-- Character Customization Panel -->
+        <div class="settings-group">
+            <h3>Customize Avatar</h3>
+            <label>
+                Skin Tone Color:
+                <input type="color" id="color-shirt" value="#e0a96d">
+            </label>
+            <label>
+                Hat Category:
+                <select id="select-hat">
+                    <option value="none">No Hat</option>
+                    <option value="👑">👑 Crown</option>
+                    <option value="🧢">🧢 Cap</option>
+                    <option value="🎩">🎩 Top Hat</option>
+                    <option value="🤠">🤠 Cowboy Hat</option>
+                    <option value="🪖">🪖 Helmet</option>
+                    <option value="🎓">🎓 Graduation Cap</option>
+                    <option value="🎅">🎅 Santa Hat</option>
+                    <option value="🧙">🧙 Wizard Hat</option>
+                    <option value="🥷">🥷 Ninja Mask</option>
+                </select>
+            </label>
+            <label>
+                Face Expression:
+                <select id="select-face">
+                    <option value="🙂">🙂 Normal</option>
+                    <option value="😎">😎 Cool</option>
+                    <option value="😡">😡 Angry</option>
+                    <option value="🤪">🤪 Crazy</option>
+                    <option value="😭">😭 Crying</option>
+                    <option value="😱">😱 Scared</option>
+                    <option value="😈">😈 Devil</option>
+                    <option value="😴">😴 Sleeping</option>
+                </select>
+            </label>
+        </div>
+
+        <!-- Active Connections List -->
+        <div id="player-list-wrapper" class="settings-group">
+            <h3>Active Players in Lobby</h3>
+            <div id="player-list"></div>
+        </div>
+
+        <p id="wait-message">Waiting for host to launch...</p>
+        <button id="btn-start" class="start-match-btn hidden">Start Arena Match</button>
+        <button id="btn-leave-lobby" class="secondary-btn leave-btn">🏳 Quit to Lobby</button>
+    </div>
+
+    <!-- 3. ACTIVE ARENA GAME SCREEN DISPLAY -->
+    <div id="game-screen" class="hidden">
+        <div id="game-container-wrapper">
+            <!-- HUD Stats Layer -->
+            <div id="game-ui-overlay">
+                <div id="game-ticker-message">Arena Live</div>
+                <div id="game-timer">FUSE: --s</div>
+                <button id="btn-quit-game">Quit Game</button>
+            </div>
+
+            <!-- Main Render Target Canvas -->
+            <canvas id="bomb-canvas"></canvas>
+
+            <!-- Touch Controllers Layer -->
+            <div id="touch-controls-container">
+                <div id="joystick-zone">
+                    <div id="joystick-base"></div>
+                    <div id="joystick-stick"></div>
+                </div>
+
+                <div style="position: relative; height: 52px; width: 52px;">
+                    <!-- Floating emote container panel layer -->
+                    <div id="emote-drawer-panel" class="hidden">
+                        <button class="btn-emote-trigger" type="button">😂</button>
+                        <button class="btn-emote-trigger" type="button">👍</button>
+                        <button class="btn-emote-trigger" type="button">👊</button>
+                        <button class="btn-emote-trigger" type="button">😡</button>
+                    </div>
+                    <button id="btn-emote-toggle" type="button">🎭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. MATCH FINALE LEADERBOARD SCREEN -->
+    <div id="leaderboard-screen" class="screen hidden">
+        <h1>Match Over</h1>
+        <div class="settings-group">
+            <h3>Final Standings</h3>
+            <div id="podium-rows-container"></div>
+        </div>
+        <button id="btn-return-lobby" class="primary-btn">Return to Lobby</button>
+    </div>
+
+    <!-- External Client Networking Mappings -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="audio.js"></script>
+    <script src="network.js"></script>
+    <script src="renderer.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
