@@ -28,7 +28,6 @@ let playerTrails = {};
 let mapW = 1400, mapH = 1000;
 let heartbeatTimer = null;
 
-// MULTI-POV SPECTATOR ENGINE STORAGE
 let spectatorTargetName = ""; 
 let manualSpectatorOverride = false;
 
@@ -243,8 +242,8 @@ function initUIInteractionListeners() {
             e.stopPropagation();
             e.preventDefault();
             if (window.Network && typeof window.Network.sendEmote === 'function') {
-window.Network.sendEmote(e.target.innerText);
-}
+                window.Network.sendEmote(e.target.innerText);
+            }
 if (emoteDrawerPanel) emoteDrawerPanel.classList.add('hidden');
 }
 });
@@ -304,12 +303,11 @@ if (k === 'ArrowLeft' || k === 'a') keysPressed.ArrowLeft = false;
 if (k === 'ArrowRight' || k === 'd') keysPressed.ArrowRight = false;
 updateKeyboardInput();
 });
-// FIXED TOUCH ENGINE TRACKING INDEX LISTENER
 if (joystickZone) {
 joystickZone.addEventListener('touchstart', (e) => {
 e.preventDefault();
 if (joystickActive || !e.changedTouches.length) return;
-const touch = e.changedTouches[0]; // FIXED: Extracts the specific active finger index row
+const touch = e.changedTouches[0];
 joystickActive = true;
 activeTouchId = touch.identifier;
 handleJoystickMove(touch);
@@ -379,6 +377,9 @@ ended = true;
 break;
 }
 }
+if (e.touches.length === 0) {
+ended = true;
+}
 if (ended) {
 joystickActive = false;
 activeTouchId = null;
@@ -419,6 +420,11 @@ if (btnStart) btnStart.classList.remove('hidden');
 if (waitMessage) waitMessage.classList.add('hidden');
 if (hostSettingsPanel) hostSettingsPanel.classList.remove('hidden');
 }
+if (data.players && Array.isArray(data.players)) {
+data.players.forEach(p => {
+if (!currentPositions[p]) currentPositions[p] = {};
+});
+}
 sendCosmeticsUpdate();
 updatePlayerLobbyUI(data.players);
 });
@@ -434,6 +440,11 @@ if (hostSettingsPanel) hostSettingsPanel.classList.remove('hidden');
 if (btnStart) btnStart.classList.add('hidden');
 if (waitMessage) waitMessage.classList.remove('hidden');
 if (hostSettingsPanel) hostSettingsPanel.classList.add('hidden');
+}
+if (data.players && Array.isArray(data.players)) {
+data.players.forEach(p => {
+if (!currentPositions[p]) currentPositions[p] = {};
+});
 }
 sendCosmeticsUpdate();
 updatePlayerLobbyUI(data.players);
@@ -491,7 +502,7 @@ currentPositions[name].y = targetPositions[name].y;
 }
 }
 if (lobbyScreen && !lobbyScreen.classList.contains('hidden')) {
-let activeNames = Object.keys(currentPositions);
+let activeNames = Object.keys(targetPositions);
 updatePlayerLobbyUI(activeNames);
 }
 if (explosionActive) return;
