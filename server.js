@@ -192,7 +192,6 @@ function processPhysicsFrame(roomId, room) {
         }
     }
 
-    const now = Date.now();
     for (let i = 0; i < alivePlayers.length; i++) {
         const nameA = alivePlayers[i];
         const pA = room.positions[nameA];
@@ -208,19 +207,19 @@ function processPhysicsFrame(roomId, room) {
                 const lastTagA = room.lastTagTimes[nameA] || 0;
                 const lastTagB = room.lastTagTimes[nameB] || 0;
 
-                if (now - lastTagA > 1500 && now - lastTagB > 1500) {
+                if (Date.now() - lastTagA > 1500 && Date.now() - lastTagB > 1500) {
                     if (pB.hasShield) {
                         pB.hasShield = false;
                         pA.speedBoostExpiry = 0;
                         pA.frozenExpiry = Date.now() + 1200; 
-                        room.lastTagTimes[nameA] = now;
-                        room.lastTagTimes[nameB] = now;
+                        room.lastTagTimes[nameA] = Date.now();
+                        room.lastTagTimes[nameB] = Date.now();
                         io.to(roomId).emit('bomb_passed', { from: `🛡️ ${nameB}'s Shield`, to: `${nameA} (BLOCKED)` });
                     } else {
                         pA.isIt = false;
                         pB.isIt = true;
-                        room.lastTagTimes[nameA] = now;
-                        room.lastTagTimes[nameB] = now;
+                        room.lastTagTimes[nameA] = Date.now();
+                        room.lastTagTimes[nameB] = Date.now();
                         io.to(roomId).emit('bomb_passed', { from: nameA, to: nameB });
                     }
                     io.to(roomId).emit('positions_updated', { positions: room.positions });
@@ -317,7 +316,6 @@ startMatchTimers(roomId, room);
 }
 }, 1000);
 }
-// Fixed room ID feature to follow user request constraints (numbers only summary)
 function endMatchSession(roomId, room) {
 if (room.loopInterval) clearInterval(room.loopInterval);
 if (room.itemInterval) clearInterval(room.itemInterval);
@@ -511,18 +509,22 @@ socket.on('disconnect', () => {
 const roomId = socket.currentRoom;
 if (roomId && roomDetails[roomId]) {
 const room = roomDetails[roomId];
+// Remove the leaver from the player lists
 room.players = room.players.filter(p => p !== socket.username);
 delete room.positions[socket.username];
 if (room.players.length === 0) {
+// If no players remain, instantly teardown loops to conserve CPU resources
 if (room.afkCheckInterval) clearInterval(room.afkCheckInterval);
-clearInterval(room.loopInterval);
-clearInterval(room.itemInterval);
-clearInterval(room.physicsInterval);
+if (room.loopInterval) clearInterval(room.loopInterval);
+if (room.itemInterval) clearInterval(room.itemInterval);
+if (room.physicsInterval) clearInterval(room.physicsInterval);
 activeRooms.delete(roomId);
 delete roomDetails[roomId];
 } else {
+// Broadcast cleanup mapping vectors globally
 io.to(roomId).emit('room_updated', { roomId, players: room.players });
 io.to(roomId).emit('positions_updated', { positions: room.positions });
+// CRITICAL SAFETY FOR ACTIVE ROUNDS: Handle mid-game exit from a leaver holding the bomb
 let carriers = Object.keys(room.positions).filter(p => room.positions[p].isIt && !room.positions[p].isDead);
 if (carriers.length === 0 && room.gameStarted && !room.countdownActive) {
 let survivors = Object.keys(room.positions).filter(p => !room.positions[p].isDead);
@@ -530,7 +532,9 @@ if (survivors.length > 0) {
 let nextTarget = survivors[Math.floor(Math.random() * survivors.length)];
 room.positions[nextTarget].isIt = true;
 room.lastTagTimes[nextTarget] = Date.now();
-io.to(roomId).emit('bomb_passed', { from: "ARENA SYSTEM", to: nextTarget });
+// Pass confirmation telemetry out to surrounding game windows
+io.to(roomId).emit('bomb_passed', { from: "ARENA SYSTEM (LEAVER RESEED)", to: nextTarget });
+io.to(roomId).emit('positions_updated', { positions: room.positions });
 }
 }
 }
@@ -539,5 +543,5 @@ io.to(roomId).emit('bomb_passed', { from: "ARENA SYSTEM", to: nextTarget });
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Arena engine listening on port ${PORT}`);
+ console.log(`Arena engine listening on port ${PORT}`);
 });

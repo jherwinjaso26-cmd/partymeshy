@@ -487,6 +487,13 @@ window.Network.onPositionsUpdated((data) => {
 let incomingPositions = (data && data.positions) ? data.positions : (data && data.data && data.data.positions ? data.data.positions : data);
 if (!incomingPositions || typeof incomingPositions !== 'object') return;
 targetPositions = incomingPositions;
+// Clean up client memory cache for players that left the server
+for (let name in currentPositions) {
+if (!targetPositions[name]) {
+delete currentPositions[name];
+if (playerTrails[name]) delete playerTrails[name];
+}
+}
 for (let name in targetPositions) {
 if (!currentPositions[name]) {
 currentPositions[name] = { ...targetPositions[name] };
